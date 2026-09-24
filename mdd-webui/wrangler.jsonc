@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mdd-webui",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-01-01",
+
+  // The build output. `run_worker_first` makes the Worker decide before assets are served,
+  // which is what lets /api and /ws reach the tunnel while everything else stays static.
+  // Without it, a request for /api/devices would be answered by the asset router with a 404.
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/api", "/ws"]
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Route this Worker at your own hostname. The pattern must be a zone you control; a
+  // workers.dev hostname also works for testing but gives you a shared origin, which is
+  // fine because everything here is still same-origin from the browser's point of view.
+  "routes": [
+    {
+      "pattern": "gateway.example.com",
+      "custom_domain": true
+    }
+  ],
+
+  // Set with:  wrangler secret put ORIGIN
+  // Value:     the Cloudflare Tunnel hostname, e.g. https://mdd-origin.example.net
+  "vars": {
+    "ORIGIN": ""
+  }
+}

@@ -1,0 +1,25 @@
+# AI 助手的工作笔记（含本机路径、后台任务 ID 等环境状态），不是项目文档。
+# 目录本身保留在磁盘上，只是不入库。
+.workbuddy-ai/
+
+# 参考资料，不是本项目的代码。
+# mdd-research/ 里是上游 MDD Sim Gateway 与 VoCat 的源码副本，用来读实现、
+# 核对 API 契约与许可条款。它们是别人的仓库，体积大且是冗余副本，
+# 所以不纳入本仓库 —— 需要时按 mdd-webui/README.md 里的地址重新拉。
+mdd-research/
+
+# 本机安全删除机制产生的中间目录（可能包含几百个文件）
+**/.mangodisk-delete-*/
+**/vite.config.ts.timestamp-*.mjs
+**/vite.config.js.timestamp-*.mjs
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# 临时凭据，绝不入库
+.gh_token*

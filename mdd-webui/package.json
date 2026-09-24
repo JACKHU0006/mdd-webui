@@ -1,0 +1,31 @@
+{
+  "name": "mdd-webui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Independent WebUI for MDD Sim Gateway — control plane compatible, static-hostable",
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "concurrently -k -n mock,web -c magenta,cyan \"node mock/server.mjs\" \"vite\"",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "mock": "node mock/server.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "verify:settings": "node scripts/verify-settings.mjs"
+  },
+  "dependencies": {
+    "jssip": "^3.13.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "playwright-core": "^1.63.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}

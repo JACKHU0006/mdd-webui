@@ -1,0 +1,21 @@
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+*.local
+.env
+.env.*
+!.env.example
+
+# Never commit gateway state: it holds ICCID/IMSI, PINs, tokens and subscriber identities.
+data/
+*.db
+*.db-journal
+screenshots-local/
+
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log

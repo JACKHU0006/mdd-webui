@@ -82,17 +82,23 @@ page.on('console', (message) => {
 })
 page.on('pageerror', (error) => consoleErrors.push(`pageerror: ${error.message}`))
 
-await page.goto(BASE, { waitUntil: 'networkidle' })
+// `domcontentloaded`, not `networkidle`. The app holds a WebSocket open for gateway state and
+// reconnects it, and `networkidle` waits for 500 ms of *no* network activity — so a reconnecting
+// socket can keep resetting it until the navigation times out. Every navigation here is followed
+// by an explicit `waitForSelector`, which is both stricter and stable.
+await page.goto(BASE, { waitUntil: 'domcontentloaded' })
 
+// Wait for the app to decide what to show, rather than sleeping. Same reason as the note above:
+// a fixed sleep passes on a workstation and fails on a slower runner.
+await page.waitForSelector('input[type="password"], nav', { timeout: 20_000 })
 const passwordField = page.locator('input[type="password"]').first()
 if (await passwordField.count()) {
   const userField = page.locator('input[type="text"], input:not([type])').first()
   if (await userField.count()) await userField.fill(USER)
   await passwordField.fill(PASSWORD)
   await page.locator('button[type="submit"]').first().click()
-  await page.waitForTimeout(1200)
 }
-await page.waitForSelector('nav', { timeout: 10_000 })
+await page.waitForSelector('nav', { timeout: 20_000 })
 
 const readSettings = () =>
   page.evaluate(async () => {
@@ -104,7 +110,7 @@ const before = await readSettings()
 const seededProfiles = before.hardware?.modem_profiles?.length ?? 0
 
 console.log('\nhardware tab')
-await page.goto(`${BASE}/#/settings`, { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/#/settings`, { waitUntil: 'domcontentloaded' })
 await page.waitForSelector('[role="tab"]', { timeout: 10_000 })
 
 const nameInputs = page.locator('input[placeholder="e.g. DJI Cellular Dongle"]')
@@ -187,7 +193,7 @@ check('the backend switch survived', after.hardware?.modem_backend === before.ha
 check('system_name was not written back', after.system_name === undefined)
 
 console.log('\nreload')
-await page.reload({ waitUntil: 'networkidle' })
+await page.reload({ waitUntil: 'domcontentloaded' })
 await page.waitForSelector('[role="tab"]', { timeout: 10_000 })
 await page.locator('[role="tab"]').nth(2).click()
 await page.waitForTimeout(400)

@@ -76,13 +76,17 @@ try {
   await page.goto(BASE, { waitUntil: 'domcontentloaded' })
 
   // ---- sign in ----------------------------------------------------------------
-  await page.waitForTimeout(600)
+  // Wait for whichever the app decides to show — the sign-in form or the shell — instead of
+  // sleeping a fixed 600 ms. That sleep is the difference between passing on a workstation and
+  // failing on a slower runner: React has not rendered the form yet, `count()` is 0, the sign-in
+  // is silently skipped, and the failure only surfaces much later as a missing element.
+  await page.waitForSelector('input[type="password"], nav', { timeout: 20000 })
   const passwordInput = page.locator('input[type="password"]')
   if (await passwordInput.count()) {
     await passwordInput.fill(PASSWORD)
     await page.locator('button[type="submit"]').first().click()
-    await page.waitForSelector('nav', { timeout: 15000 })
   }
+  await page.waitForSelector('nav', { timeout: 20000 })
 
   await page.evaluate(() => {
     window.location.hash = '#/esim'

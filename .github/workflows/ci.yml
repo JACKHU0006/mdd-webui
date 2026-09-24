@@ -134,14 +134,36 @@ jobs:
           # Each script is its own process driving a real browser: one page's failure must not
           # hide another's, and the loop reports every page before exiting non-zero.
           status=0
+          failed=""
           for name in settings esim egress notifications calls terminal softphone; do
-            printf '\n===== verify-%s =====\n' "$name"
-            node "scripts/verify-$name.mjs" || status=1
+            log="/tmp/verify-$name.log"
+            echo "::group::verify-$name"
+            if node "scripts/verify-$name.mjs" > "$log" 2>&1; then
+              tail -2 "$log"
+            else
+              status=1
+              failed="$failed $name"
+              cat "$log"
+              # One annotation per failing assertion. Without this the run summary says only
+              # "something failed", and the names of the broken checks are buried in a
+              # collapsed log — which is exactly what made the first failure hard to read.
+              if grep -q '^FAIL' "$log"; then
+                grep '^FAIL' "$log" | head -25 | while IFS= read -r line; do
+                  echo "::error::verify-$name — $line"
+                done
+              else
+                echo "::error::verify-$name 未产出任何 FAIL 行，进程本身崩了；见上方日志"
+              fi
+            fi
+            echo "::endgroup::"
           done
 
           if [ "$status" -ne 0 ]; then
-            echo "::error::one or more page checks failed"
-            echo "----- dev server log -----"
-            tail -60 /tmp/dev.log
+            echo "::error::页面校验失败:$failed"
+            echo "----- dev server log（已滤掉 vite 的 ws EPIPE 噪声）-----"
+            # The WebSocket proxy logs an EPIPE stack every time a page closes its state socket,
+            # which is every page, every run. Unfiltered, those stacks fill the whole tail and
+            # push out the lines that would explain the failure.
+            grep -vE '\[vite\] ws proxy|Error: write EPIPE|\[web\][[:space:]]+at ' /tmp/dev.log | tail -60
           fi
           exit $status

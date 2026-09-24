@@ -25,10 +25,18 @@ const BASE = process.env.MDD_UI || 'http://localhost:5173'
 const USER = process.env.MOCK_USER || 'admin'
 const PASSWORD = process.env.MOCK_PASSWORD || 'mdd-demo-password'
 
+/**
+ * An explicit Chromium, or `undefined` to let Playwright resolve its own.
+ *
+ * `undefined` rather than `null` on purpose: Playwright validates `executablePath` as a
+ * string and rejects `null` with "expected string, got object". Returning `undefined` leaves
+ * the option out instead, so one script serves both a workstation (Chromium under
+ * `LOCALAPPDATA`, found below) and Linux CI (Playwright's registry under `~/.cache`).
+ */
 function findChromium() {
   if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH
   const root = join(process.env.LOCALAPPDATA || '', 'ms-playwright')
-  if (!existsSync(root)) return null
+  if (!existsSync(root)) return undefined
   const revisions = readdirSync(root)
     .filter((name) => name.startsWith('chromium-'))
     .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]))
@@ -41,7 +49,7 @@ function findChromium() {
       if (existsSync(candidate)) return candidate
     }
   }
-  return null
+  return undefined
 }
 
 const failures = []
@@ -55,10 +63,9 @@ function check(label, condition, detail = '') {
 }
 
 const executablePath = findChromium()
-if (!executablePath) {
-  console.error('No Chromium found. Set CHROMIUM_PATH.')
-  process.exit(1)
-}
+// `undefined` is a valid answer here — it means "let Playwright resolve its own browser",
+// which is what happens on Linux CI where the browser lives in ~/.cache rather than under
+// LOCALAPPDATA. Exiting on it would make these scripts workstation-only.
 
 const browser = await chromium.launch({ executablePath, headless: true })
 const context = await browser.newContext({

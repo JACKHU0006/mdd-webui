@@ -1,0 +1,147 @@
+name: CI
+
+# The repo is private, so Actions minutes are metered. Two things keep the cost down:
+# docs-only pushes are ignored entirely, and the fast job (typecheck + build + Python tests)
+# is separate from the browser job, so a broken type still fails in about a minute.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+# A second push while the first is still running should supersede it, not queue behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  checks:
+    name: 类型检查 · 构建 · 网关侧测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mdd-webui/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装依赖
+        working-directory: mdd-webui
+        run: npm ci
+
+      # `tsc -b` is the type gate. It runs before the build because a type error is a
+      # faster and clearer failure than a bundler error.
+      - name: 类型检查
+        working-directory: mdd-webui
+        run: npx tsc -b --force
+
+      - name: 构建
+        working-directory: mdd-webui
+        run: npx vite build
+
+      # These five need no hardware, no gateway and no network: the modules defer their
+      # control-plane imports and the tests stub `requests`. So they are the cheapest
+      # place to catch a logic regression in the add-ons.
+      - name: 网关侧测试
+        run: |
+          set -e
+          status=0
+          run() {
+            printf '\n===== %s =====\n' "$1"
+            python "$1" || status=1
+          }
+          run mdd-addons/tools/test-modem-repair.py
+          run mdd-addons/control/app/test-at-terminal.py
+          run mdd-addons/control/app/test-notify-channels.py
+          run mdd-addons/control/app/test-telegram-bot.py
+          run mdd-addons/control/app/test-esim-inventory.py
+          exit $status
+
+  ui:
+    name: 控制台行为校验
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mdd-webui/package-lock.json
+
+      - name: 安装依赖
+        working-directory: mdd-webui
+        run: npm ci
+
+      # The scripts drive Chromium through `playwright-core`, which ships no browser of its
+      # own. `--with-deps` also pulls the shared libraries a headless Chromium needs.
+      # `findChromium()` returns `undefined` on Linux, so Playwright resolves the browser it
+      # just installed — that is why the scripts no longer hard-exit when they cannot find
+      # one under LOCALAPPDATA.
+      - name: 安装 Chromium
+        working-directory: mdd-webui
+        run: npx playwright-core install --with-deps chromium
+
+      # Server and checks live in ONE step on purpose. Starting the server in an earlier step
+      # and relying on the background process surviving into a later one works, but it is an
+      # assumption about the runner that buys nothing here — and when it does not hold, the
+      # failure looks like a broken page rather than a missing server. Keeping them together
+      # means the log that explains the failure is always in the same step as the failure.
+      - name: 启动服务并校验 7 个页面
+        working-directory: mdd-webui
+        run: |
+          # `MOCK_CONFIGURED=1` starts the mock with the admin password already set, which is
+          # what the scripts log in with. Without it they would hit the first-run setup flow.
+          MOCK_CONFIGURED=1 npm run dev:mock > /tmp/dev.log 2>&1 &
+          DEV_PID=$!
+          trap 'kill $DEV_PID 2>/dev/null || true' EXIT
+
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:5173 \
+               && curl -sf -o /dev/null http://127.0.0.1:8788/api/auth/status; then
+              echo "dev server ready after ${i}s"
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::dev server did not come up in 60s"
+            tail -40 /tmp/dev.log
+            exit 1
+          fi
+
+          # Each script is its own process driving a real browser: one page's failure must not
+          # hide another's, and the loop reports every page before exiting non-zero.
+          status=0
+          for name in settings esim egress notifications calls terminal softphone; do
+            printf '\n===== verify-%s =====\n' "$name"
+            node "scripts/verify-$name.mjs" || status=1
+          done
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::one or more page checks failed"
+            echo "----- dev server log -----"
+            tail -60 /tmp/dev.log
+          fi
+          exit $status

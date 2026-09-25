@@ -72,7 +72,9 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
   locale: 'en-US',
 })
-// Pin the UI language so selectors stay stable regardless of the host's locale.
+// The `locale: 'en-US'` above is what keeps this stable on any host — it sets both
+// `navigator.language` and the browser's `Intl` locale. The localStorage write states which
+// language the selectors assume. See the note in the other scripts.
 await context.addInitScript(() => window.localStorage.setItem('mdd.language', 'en'))
 const page = await context.newPage()
 

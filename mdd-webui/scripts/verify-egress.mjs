@@ -58,13 +58,17 @@ function check(name, pass, detail = '') {
 }
 
 const browser = await chromium.launch({ executablePath: findChromium(), headless: true })
-const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } })
+const page = await browser.newPage({ locale: 'zh-CN', viewport: { width: 1400, height: 1100 } })
 
-// Pin the UI language. The app derives its default from `navigator.language` — `zh-CN` on the
-// developer's machine, `en-US` on a CI runner — while every selector below is written in
-// Chinese. Without this, CI renders the English UI and every check fails there while passing
-// locally. The language is a fixture here, not the thing under test; `verify-settings` pins it
-// the same way (to `en`, since its selectors are English).
+// Pin the locale. The `locale: 'zh-CN'` above is the half that matters: it sets
+// `navigator.language` *and* the browser's `Intl` locale, so `toLocaleString()` calls with no
+// explicit locale (`src/lib/format.ts`) are covered too. Overriding the `navigator.language`
+// property in an init script does NOT do that — it changes what app code reads while `Intl`
+// keeps using the host's locale. `verify-locale-pin.mjs` asserts that distinction.
+//
+// The localStorage write is the explicit statement of which language the selectors below
+// assume. It is redundant with `locale` today; it stays because it is the intent, not the
+// mechanism, and the intent is what a reader needs.
 await page.addInitScript(() => window.localStorage.setItem('mdd.language', 'zh'))
 
 const consoleErrors = []

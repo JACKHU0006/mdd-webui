@@ -3,6 +3,11 @@ name: CI
 # The repo is private, so Actions minutes are metered. Two things keep the cost down:
 # docs-only pushes are ignored entirely, and the fast job (typecheck + build + Python tests)
 # is separate from the browser job, so a broken type still fails in about a minute.
+#
+# The browser job must never assume anything about the host: a GitHub runner reports
+# `navigator.language = en-US` and has no Chromium under LOCALAPPDATA, while a developer's
+# machine is usually neither. Both of those differences used to make it pass locally and fail
+# here, so the scripts now pin the language and let Playwright resolve its own browser.
 on:
   push:
     branches: [main]
@@ -106,7 +111,7 @@ jobs:
       # assumption about the runner that buys nothing here — and when it does not hold, the
       # failure looks like a broken page rather than a missing server. Keeping them together
       # means the log that explains the failure is always in the same step as the failure.
-      - name: 启动服务并校验 7 个页面
+      - name: 启动服务并校验 8 项（语言固定 + 7 个页面）
         working-directory: mdd-webui
         run: |
           # `MOCK_CONFIGURED=1` starts the mock with the admin password already set, which is
@@ -135,7 +140,10 @@ jobs:
           # hide another's, and the loop reports every page before exiting non-zero.
           status=0
           failed=""
-          for name in settings esim egress notifications calls terminal softphone; do
+          # `locale-pin` runs first on purpose. Every other script's selectors are Chinese, and
+          # the app derives its default language from `navigator.language` — so if this one
+          # fails, the rest fail too, and only this check says why.
+          for name in locale-pin settings esim egress notifications calls terminal softphone; do
             log="/tmp/verify-$name.log"
             echo "::group::verify-$name"
             if node "scripts/verify-$name.mjs" > "$log" 2>&1; then

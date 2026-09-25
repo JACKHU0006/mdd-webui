@@ -70,6 +70,14 @@ function check(name, pass, detail = '') {
 
 const browser = await chromium.launch({ executablePath: findChromium(), headless: true })
 const page = await browser.newPage({ viewport: { width: 1400, height: 1300 } })
+
+// Pin the UI language. The app derives its default from `navigator.language` — `zh-CN` on the
+// developer's machine, `en-US` on a CI runner — while every selector below is written in
+// Chinese. Without this, CI renders the English UI and every check fails there while passing
+// locally. The language is a fixture here, not the thing under test; `verify-settings` pins it
+// the same way (to `en`, since its selectors are English).
+await page.addInitScript(() => window.localStorage.setItem('mdd.language', 'zh'))
+
 const consoleErrors = []
 page.on('console', (m) => {
   if (m.type() === 'error') consoleErrors.push(m.text())

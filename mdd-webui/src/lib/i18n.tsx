@@ -357,6 +357,10 @@ const en = {
   'esim.notEuicc':
     'This card is not an eUICC / eSIM. Ordinary USIM cards cannot be managed here.',
   'esim.storageFree': 'Storage left',
+  'esim.profileSize': '≈ {size}',
+  'esim.sizeMeasured': '{measured}/{total} measured · {size} total',
+  'esim.sizeHint':
+    'A profile has no size field in SGP.22. These figures come from the drop in free storage across an install, so they only cover profiles installed after the first sample.',
   'esim.slot': 'Slot {index}',
   'esim.profileFallback': 'Profile',
   'esim.profileClass': 'Class',
@@ -1256,6 +1260,10 @@ const zh: Record<MessageKey, string> = {
     '该读卡器里没有卡片，因此什么都读不到。蜂窝模块的卡片是通过 SIM 桥接过来的 —— 请确认模块仍然连接。',
   'esim.notEuicc': '这张卡不是 eUICC / eSIM。普通 USIM 卡无法在这里管理。',
   'esim.storageFree': '剩余存储',
+  'esim.profileSize': '≈ {size}',
+  'esim.sizeMeasured': '已测 {measured}/{total} · 合计 {size}',
+  'esim.sizeHint':
+    'SGP.22 没有"单个配置大小"这个字段。这里显示的是每次下载前后空闲存储的差值，因此只覆盖第一次取样之后新装的配置。',
   'esim.slot': '安全单元 {index}',
   'esim.profileFallback': '配置文件',
   'esim.profileClass': '类型',

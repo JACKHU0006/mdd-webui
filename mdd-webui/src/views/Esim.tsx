@@ -52,6 +52,7 @@ import {
   SkeletonRows,
 } from '../components/ui.tsx'
 import { QrScan } from '../components/QrScan.tsx'
+import { sizeKey, sumMeasured, useProfileSizes, type SizeRecord } from '../lib/esimSize.ts'
 import { formatAge, formatBytes } from '../lib/format.ts'
 
 /**
@@ -548,6 +549,7 @@ function SecureElementPanel({
   index,
   dual,
   busy,
+  sizes,
   onReload,
   onEnable,
   onDisable,
@@ -558,6 +560,7 @@ function SecureElementPanel({
   index: number
   dual: boolean
   busy: boolean
+  sizes: Record<string, SizeRecord>
   onReload: () => void
   onEnable: (profile: EsimProfile) => void
   onDisable: (profile: EsimProfile) => void
@@ -567,6 +570,11 @@ function SecureElementPanel({
   const { t } = useI18n()
   const profiles = se.profiles ?? []
   const notifications = se.notifications ?? []
+  const measured = sumMeasured(
+    se.eid,
+    profiles.map((profile) => String(profile.iccid ?? '')),
+    sizes,
+  )
 
   return (
     <div className="stack" style={{ gap: 'var(--space-3)' }}>
@@ -584,7 +592,22 @@ function SecureElementPanel({
             {t('esim.storageFree')} · {formatBytes(se.freeSpace)}
           </span>
         ) : null}
+        {measured.count > 0 ? (
+          <span className="xs faint">
+            {t('esim.sizeMeasured', {
+              measured: String(measured.count),
+              total: String(profiles.length),
+              size: formatBytes(measured.total),
+            })}
+          </span>
+        ) : null}
       </div>
+
+      {se.freeSpace !== null && se.freeSpace !== undefined && measured.count < profiles.length ? (
+        <p className="xs faint" style={{ margin: 0 }}>
+          {t('esim.sizeHint')}
+        </p>
+      ) : null}
 
       {se.error ? <ErrorNote>{se.error}</ErrorNote> : null}
 
@@ -617,6 +640,13 @@ function SecureElementPanel({
                   <div className="row" style={{ gap: 'var(--space-2)' }}>
                     <span className="xs faint mono truncate">{profile.iccid}</span>
                     <CopyButton value={profile.iccid} />
+                    {sizes[sizeKey(se.eid, String(profile.iccid ?? ''))] ? (
+                      <span className="xs faint">
+                        {t('esim.profileSize', {
+                          size: formatBytes(sizes[sizeKey(se.eid, String(profile.iccid ?? ''))].bytes),
+                        })}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="row wrap" style={{ gap: 'var(--space-2)' }}>
@@ -737,6 +767,8 @@ export function Esim() {
 
   const ses = card?.ses ?? []
   const hasEuicc = ses.some((se) => se.eid || se.chip || (se.profiles ?? []).length > 0)
+  // SGP.22 不给每个配置的大小，只能靠"下载前后空闲空间差值"来测；这里读的是本地记录。
+  const sizes = useProfileSizes(card)
 
   /** Load only the lpac status — never the card. Safe to run on mount and on reader change. */
   useEffect(() => {
@@ -1016,6 +1048,7 @@ export function Esim() {
                 busy={busyOp !== null}
                 onReload={() => void loadCard()}
                 onEnable={(profile) => setEnableTarget({ profile, seId: switchSeId(se) })}
+                sizes={sizes}
                 onDisable={(profile) =>
                   void profileOp('disable', () =>
                     api.esim.disable(profile.iccid, {

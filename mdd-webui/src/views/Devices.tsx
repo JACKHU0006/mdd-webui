@@ -19,6 +19,7 @@ import { ApiError } from '../lib/types.ts'
 import type { Device } from '../lib/types.ts'
 import { Badge, CapabilityCard, CopyButton, Empty, SkeletonRows, StatusDot } from '../components/ui.tsx'
 import type { Tone } from '../components/ui.tsx'
+import { formatOperator } from '../lib/format.ts'
 
 function formatBytes(value: number): string {
   if (!value) return '0 B'
@@ -116,14 +117,16 @@ function DeviceCard({
               {device.sim.present ? device.sim.name || t('device.sim') : t('device.noSim')}
             </div>
             {device.sim.number ? <div className="xs mono muted">{device.sim.number}</div> : null}
-            {device.sim.carrier ? <div className="xs muted">{device.sim.carrier}</div> : null}
+            {device.sim.carrier ? (
+              <div className="xs muted">{formatOperator(device.sim.carrier)}</div>
+            ) : null}
           </div>
 
           {device.cellular ? (
             <div className="stack" style={{ gap: 3 }}>
               <div className="xs faint">{t('cap.cellular')}</div>
               <div className="small">
-                {device.cellular.operator || '—'}{' '}
+                {formatOperator(device.cellular.operator)}{' '}
                 {device.cellular.roaming ? <Badge tone="warn">roaming</Badge> : null}
               </div>
               <div className="xs muted">

@@ -60,6 +60,26 @@ export function formatDate(value: number | null | undefined): string {
 }
 
 /**
+ * A carrier identity as one line of text.
+ *
+ * The engine may answer `operator` either as a bare name or as an identity object (name +
+ * home network + PLMN). A JSX child must be text, so both shapes are flattened here rather
+ * than at each call site — passing the object through is what blanked the devices page.
+ */
+export function formatOperator(
+  value: string | { name?: string; home_network?: string; plmn?: string } | null | undefined,
+): string {
+  if (typeof value === 'string') return value.trim() || '—'
+  if (!value || typeof value !== 'object') return '—'
+  const name = typeof value.name === 'string' ? value.name.trim() : ''
+  if (name) return name
+  const home = typeof value.home_network === 'string' ? value.home_network.trim() : ''
+  if (home) return home
+  const plmn = typeof value.plmn === 'string' ? value.plmn.trim() : ''
+  return plmn || '—'
+}
+
+/**
  * A coarse "time ago". Used for freshness indicators where the exact second is noise.
  * Rounds down on purpose: "2 minutes ago" must not be shown for something 90 seconds old
  * if the point is that it might be stale.

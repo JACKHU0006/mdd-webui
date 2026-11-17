@@ -528,11 +528,13 @@ function SoftphonePanel({
                 {provisioning.username}@{provisioning.realm || provisioning.host}
               </KeyValue>
               <KeyValue label="WSS" mono>
-                wss://{provisioning.host || window.location.hostname}:{provisioning.ws_port}/ws
+                {provisioning.ws_path
+                  ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}${provisioning.ws_path}`
+                  : `wss://${provisioning.host || window.location.hostname}:${provisioning.ws_port}/ws`}
               </KeyValue>
             </div>
-            {/* The WSS endpoint is the engine's own port, not the control-plane port — it has
-                to be reachable from the browser or registration fails with no useful cause. */}
+            {/* v1.14.1 起信令走控制面的同源 relay，页面用什么 origin 就复用什么证书；
+                只有旧后端才是「引擎自己的端口」，那种情况浏览器必须能直连那个端口。 */}
             <div className="note note-warn">{t('calls.wssHint')}</div>
           </Disclosure>
         ) : null}

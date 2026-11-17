@@ -77,7 +77,8 @@ export function Messages({ initialLineId }: { initialLineId?: string }) {
     for (const thread of threads ?? []) merged.set(thread.peer, thread)
     for (const message of liveMessages) {
       const existing = merged.get(message.peer)
-      if (!existing || message.timestamp >= existing.last.timestamp) {
+      const existingTs = existing?.last?.timestamp ?? -1
+      if (!existing || message.timestamp >= existingTs) {
         merged.set(message.peer, {
           peer: message.peer,
           last: message,
@@ -86,7 +87,11 @@ export function Messages({ initialLineId }: { initialLineId?: string }) {
         })
       }
     }
-    return [...merged.values()].sort((a, b) => b.last.timestamp - a.last.timestamp)
+    // A thread the engine knows by peer but has no retained body for still belongs in the
+    // list; it just sorts last instead of throwing on a missing `last`.
+    return [...merged.values()].sort(
+      (a, b) => (b.last?.timestamp ?? 0) - (a.last?.timestamp ?? 0),
+    )
   }, [threads, liveMessages])
 
   const loadThread = useCallback(
@@ -229,14 +234,16 @@ export function Messages({ initialLineId }: { initialLineId?: string }) {
                     <span className="row" style={{ gap: 5 }}>
                       {thread.unread > 0 ? <Badge tone="info">{thread.unread}</Badge> : null}
                       <span className="xs faint">
-                        {new Date(thread.last.timestamp * 1000).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {thread.last?.timestamp
+                          ? new Date(thread.last.timestamp * 1000).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
                       </span>
                     </span>
                   </div>
-                  <div className="xs muted truncate">{thread.last.body}</div>
+                  <div className="xs muted truncate">{thread.last?.body ?? ''}</div>
                 </button>
               ))}
             </div>

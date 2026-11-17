@@ -291,7 +291,14 @@ export class Softphone {
   start(prov: SoftphoneProvisioning, host: string): void {
     if (this.ua) this.stop()
     this.dead = false
-    const wsUrl = `wss://${host}:${prov.ws_port}/ws`
+    // 后端两个版本对这个字段的处理不同：
+    //   v1.14.1+ —— 只给 ws_path，信令是控制面的同源 relay（8443 / 反代后的同一 origin）；
+    //   更早的版本 —— 给 ws_port，浏览器直连引擎自己的 WSS 端口。
+    // 同源路径优先：它复用页面已经受信的证书，反代后面也不用再开第二个端口。
+    const secure = window.location.protocol === 'https:'
+    const wsUrl = prov.ws_path
+      ? `${secure ? 'wss' : 'ws'}://${window.location.host}${prov.ws_path}`
+      : `wss://${host}:${prov.ws_port}/ws`
     const socket = new JsSIP.WebSocketInterface(wsUrl)
     const domain = prov.domain || host
     this.domain = domain

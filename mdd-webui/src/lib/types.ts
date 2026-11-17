@@ -89,9 +89,28 @@ export interface LogicalChannel {
   error?: string
 }
 
+/**
+ * The carrier identity the engine reports for a registered line.
+ *
+ * Older builds said `operator` was a plain string. The engine actually answers with this
+ * object (AT+COPS / AT+QOPL style fields: the matched name, the home network, the PLMN digits),
+ * so rendering it as text threw "objects are not valid as a React child" and blanked the page.
+ */
+export interface NetworkIdentity {
+  name?: string
+  home_network?: string
+  plmn?: string
+  match_source?: string
+  specific?: boolean
+  database?: string
+  database_version?: string
+  current_network?: string
+}
+
 export interface CellularView {
   registration: string
-  operator: string
+  /** A bare name on some builds, the full identity object on others. */
+  operator: string | NetworkIdentity | null
   /** dBm, or null when the module has not reported yet. */
   signal: number | null
   apn: string
@@ -125,7 +144,8 @@ export interface DeviceSimView {
   name: string
   number: string
   present: boolean
-  carrier: string
+  /** A bare carrier name on some builds, the matched identity object on others. */
+  carrier: string | NetworkIdentity | null
 }
 
 export interface Device {
@@ -360,7 +380,14 @@ export interface SoftphoneProvisioning {
   enabled: boolean
   username: string
   password: string
-  ws_port: number
+  /**
+   * v1.14.1 起的后端不再暴露引擎自己的 WSS 端口：信令统一走控制面的同源 relay。
+   * 返回的是 relay 的路径（`/api/instances/{iid}/softphone/ws`），浏览器直接用当前
+   * 页面的 origin 连它即可，不需要额外端口，也不需要第二张证书。
+   */
+  ws_path?: string
+  /** 旧后端（引擎直连 WSS 端口）才会带这个字段，仅作退路。 */
+  ws_port?: number
   /** Hostname the browser should dial; derived from the request Host header. */
   host: string
   /** SIP realm, derived from MCC/MNC. */
@@ -861,7 +888,12 @@ export interface SmsMessage {
 
 export interface MessageThread {
   peer: string
-  last: SmsMessage
+  /**
+   * The newest message in the thread. The engine omits it for a thread it has a peer for
+   * but no retained message body (for example right after a SIM swap), so every read site
+   * has to tolerate a missing `last` instead of assuming `last.timestamp` exists.
+   */
+  last?: SmsMessage | null
   count: number
   unread: number
 }

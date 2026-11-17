@@ -51,6 +51,7 @@ import {
   Field,
   SkeletonRows,
 } from '../components/ui.tsx'
+import { QrScan } from '../components/QrScan.tsx'
 import { formatAge, formatBytes } from '../lib/format.ts'
 
 /**
@@ -320,6 +321,27 @@ function DownloadDialog({
             {t('esim.downloadHint')}
           </p>
           {error ? <ErrorNote>{error}</ErrorNote> : null}
+
+          {/* 扫码只是把二维码里的那串文本取出来填进下面的字段，不改变下载流程本身。 */}
+          <Field label={t('esim.scanLabel')}>
+            <QrScan
+              onDetect={(text) => {
+                const clean = text.trim()
+                setError(null)
+                if (/^LPA:\d+\$/i.test(clean)) {
+                  setMode('code')
+                  setActivation(clean)
+                } else if (!clean.includes('$') && clean.includes('.')) {
+                  // 只有地址没有激活码：当成 SM-DP+ 填，Matching ID 让操作员自己补。
+                  setMode('manual')
+                  setSmdp(clean)
+                } else {
+                  setMode('code')
+                  setActivation(clean)
+                }
+              }}
+            />
+          </Field>
 
           {dual ? (
             <Field label={t('esim.selectSe')} hint={t('esim.selectSeHint')}>

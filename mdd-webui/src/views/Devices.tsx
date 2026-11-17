@@ -19,7 +19,7 @@ import { ApiError } from '../lib/types.ts'
 import type { Device } from '../lib/types.ts'
 import { Badge, CapabilityCard, CopyButton, Empty, SkeletonRows, StatusDot } from '../components/ui.tsx'
 import type { Tone } from '../components/ui.tsx'
-import { formatOperator } from '../lib/format.ts'
+import { formatEndpoint, formatOperator } from '../lib/format.ts'
 
 function formatBytes(value: number): string {
   if (!value) return '0 B'
@@ -142,7 +142,7 @@ function DeviceCard({
 
           <div className="stack" style={{ gap: 3 }}>
             <div className="xs faint">{t('device.epdg')}</div>
-            <div className="small mono truncate">{device.vowifi.epdg || '—'}</div>
+            <div className="small mono truncate">{formatEndpoint(device.vowifi.epdg)}</div>
             <div className="xs muted">{device.vowifi.ims || '—'}</div>
             <div className="xs faint">
               rekey {device.vowifi.rekey_minutes}m / IKE {device.vowifi.ike_rekey_minutes}m

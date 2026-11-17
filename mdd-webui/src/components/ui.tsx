@@ -120,7 +120,12 @@ export function CapabilityCard({
   const actualLabel = useActualLabel()
   const tone = toneForActual(capability?.actual)
   const desired = capability?.desired ?? false
-  const available = capability?.available ?? false
+  // 后端对 cellular / vowifi 并不总是带 `available`（只有 flight 有），早先把「缺失」当成
+  // 「不可用」，结果设备页三个开关全是灰的、点不动 —— 用户没法关掉 4G 数据。
+  // 真正的判据是后端有没有给出可辨识的实际状态：on/off 说明这条能力可被驱动；
+  // 只有明确 unsupported 或状态未知时才禁用。
+  const knownState = capability?.actual === 'on' || capability?.actual === 'off'
+  const available = capability?.available ?? knownState
   // A switch that cannot do anything is disabled, but it still shows *why* — the gateway
   // publishes a reason for every unavailable capability and swallowing it makes the UI
   // look broken rather than blocked.

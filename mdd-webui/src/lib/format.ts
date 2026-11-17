@@ -80,6 +80,25 @@ export function formatOperator(
 }
 
 /**
+ * The ePDG address as text.
+ *
+ * The control plane answers `vowifi.epdg` either as the bare FQDN string or as the identity
+ * record it used to build the tunnel (`{msisdn, smsc, iccid, epdg_fqdn}`). The second shape
+ * is an object, and handing it to JSX throws React error #31 and takes the whole page down —
+ * which is exactly what happened once a card arrived that carried its own ePDG record.
+ */
+export function formatEndpoint(
+  value: string | { epdg_fqdn?: string; fqdn?: string } | null | undefined,
+): string {
+  if (typeof value === 'string') return value.trim() || '—'
+  if (!value || typeof value !== 'object') return '—'
+  const fqdn = typeof value.epdg_fqdn === 'string' ? value.epdg_fqdn.trim() : ''
+  if (fqdn) return fqdn
+  const alt = typeof value.fqdn === 'string' ? value.fqdn.trim() : ''
+  return alt || '—'
+}
+
+/**
  * A coarse "time ago". Used for freshness indicators where the exact second is noise.
  * Rounds down on purpose: "2 minutes ago" must not be shown for something 90 seconds old
  * if the point is that it might be stale.

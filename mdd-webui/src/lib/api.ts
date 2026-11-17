@@ -536,8 +536,13 @@ export const api = {
   system: {
     status: () => http.get<SystemStatus>('/api/system/status'),
     clearHostAlerts: () => http.del<{ ok: true }>('/api/system/host-alerts'),
-    updateCheck: () => http.get<UpdateCheck>('/api/system/update/check'),
-    releases: () => http.get<{ releases: UpdateRelease[] }>('/api/system/update/releases'),
+    updateCheck: (force?: boolean) =>
+      http.get<UpdateCheck>('/api/system/update/check', force ? { force: true } : undefined),
+    releases: (force?: boolean) =>
+      http.get<{ releases: UpdateRelease[] }>(
+        '/api/system/update/releases',
+        force ? { force: true } : undefined,
+      ),
     repositoryStars: () => http.get<{ stars: number }>('/api/system/repository/stars'),
     applyUpdate: (body: Record<string, unknown>) =>
       http.post<{ ok: true }>('/api/system/update/apply', body),

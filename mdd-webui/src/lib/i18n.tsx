@@ -99,6 +99,21 @@ const en = {
   'overview.recentMessages': 'Recent messages',
   'overview.noMessages': 'No messages yet.',
 
+  'maint.title': 'System maintenance',
+  'maint.version': 'Installed version',
+  'maint.check': 'Check for updates',
+  'maint.checking': 'Checking…',
+  'maint.channel': 'Channel',
+  'maint.upToDate': 'Up to date',
+  'maint.available': 'Update available',
+  'maint.notes': 'Release notes',
+  'maint.bundle': 'Download support bundle',
+  'maint.bundleHint':
+    'Redacted archive (IMSI/ICCID/EID/number/tokens/message bodies removed). Review it before sharing anyway.',
+  'maint.applyHint':
+    'Updating restarts the containers, so it is never triggered from this page. Run it on the host when you are ready.',
+  'maint.error': 'Update check failed',
+
   'msg.threads': 'Conversations',
   'msg.noThreads': 'No conversations on this line.',
   'msg.compose': 'New message',
@@ -1008,6 +1023,21 @@ const zh: Record<MessageKey, string> = {
   'overview.noAlerts': '暂无主机告警。',
   'overview.recentMessages': '最近短信',
   'overview.noMessages': '暂无短信。',
+
+  'maint.title': '系统维护',
+  'maint.version': '已装版本',
+  'maint.check': '检查更新',
+  'maint.checking': '检查中…',
+  'maint.channel': '渠道',
+  'maint.upToDate': '已是最新',
+  'maint.available': '有新版',
+  'maint.notes': '版本说明',
+  'maint.bundle': '导出诊断包',
+  'maint.bundleHint':
+    '已脱敏的压缩包（去掉 IMSI / ICCID / EID / 号码 / Token / 短信正文），分享前仍请人工复核。',
+  'maint.applyHint':
+    '升级会重启容器，所以本页不会自动执行。准备好后请在宿主机上手动升级。',
+  'maint.error': '检查更新失败',
 
   'msg.threads': '会话',
   'msg.noThreads': '该线路暂无会话。',

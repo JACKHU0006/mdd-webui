@@ -9,6 +9,7 @@
 import { useI18n } from '../lib/i18n.tsx'
 import { useGateway } from '../lib/store.tsx'
 import { Badge, Empty, SkeletonRows, StatTile, StatusDot, useActualLabel } from '../components/ui.tsx'
+import { Maintenance } from '../components/Maintenance.tsx'
 import type { Tone } from '../components/ui.tsx'
 
 export function Overview({ onNavigate }: { onNavigate: (route: string) => void }) {
@@ -66,6 +67,8 @@ export function Overview({ onNavigate }: { onNavigate: (route: string) => void }
         />
         <StatTile label={t('overview.recentMessages')} value={liveMessages.length} />
       </div>
+
+      <Maintenance />
 
       <section className="card">
         <div className="card-head">

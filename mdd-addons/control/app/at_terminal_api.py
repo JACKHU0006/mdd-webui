@@ -22,7 +22,7 @@ import os
 
 from fastapi import APIRouter, HTTPException
 
-from . import cfg
+from . import config as cfg
 from .at_terminal import AtCommandPolicy, probe
 
 router = APIRouter()

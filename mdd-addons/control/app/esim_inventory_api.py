@@ -20,7 +20,7 @@ import asyncio
 
 from fastapi import APIRouter, HTTPException
 
-from . import cfg, lpa, sim
+from . import config as cfg, lpa, sim
 from .esim_inventory import build_inventory
 
 router = APIRouter()
